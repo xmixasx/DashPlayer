@@ -33,7 +33,7 @@ import com.google.android.exoplayer.dash.mpd.Period;
 import com.google.android.exoplayer.dash.mpd.UtcTimingElement;
 import com.google.android.exoplayer.dash.mpd.UtcTimingElementResolver;
 import com.google.android.exoplayer.dash.mpd.UtcTimingElementResolver.UtcTimingCallback;
-import com.example.mixas.exoplayerwrapper.Player.DemoPlayer.RendererBuilder;
+import com.example.mixas.exoplayerwrapper.Player.Player.RendererBuilder;
 import com.google.android.exoplayer.drm.MediaDrmCallback;
 import com.google.android.exoplayer.drm.StreamingDrmSessionManager;
 import com.google.android.exoplayer.drm.UnsupportedDrmException;
@@ -86,7 +86,7 @@ public class DashRendererBuilder implements RendererBuilder {
   }
 
   @Override
-  public void buildRenderers(DemoPlayer player) {
+  public void buildRenderers(Player player) {
     currentAsyncBuilder = new AsyncRendererBuilder(context, userAgent, url, drmCallback, player);
     currentAsyncBuilder.init();
   }
@@ -105,7 +105,7 @@ public class DashRendererBuilder implements RendererBuilder {
     private final Context context;
     private final String userAgent;
     private final MediaDrmCallback drmCallback;
-    private final DemoPlayer player;
+    private final Player player;
     private final ManifestFetcher<MediaPresentationDescription> manifestFetcher;
     private final UriDataSource manifestDataSource;
 
@@ -114,7 +114,7 @@ public class DashRendererBuilder implements RendererBuilder {
     private long elapsedRealtimeOffset;
 
     public AsyncRendererBuilder(Context context, String userAgent, String url,
-        MediaDrmCallback drmCallback, DemoPlayer player) {
+        MediaDrmCallback drmCallback, Player player) {
       this.context = context;
       this.userAgent = userAgent;
       this.drmCallback = drmCallback;
@@ -218,7 +218,7 @@ public class DashRendererBuilder implements RendererBuilder {
           elapsedRealtimeOffset, mainHandler, player);
       ChunkSampleSource videoSampleSource = new ChunkSampleSource(videoChunkSource, loadControl,
           VIDEO_BUFFER_SEGMENTS * BUFFER_SEGMENT_SIZE, mainHandler, player,
-          DemoPlayer.TYPE_VIDEO);
+          Player.TYPE_VIDEO);
       TrackRenderer videoRenderer = new MediaCodecVideoTrackRenderer(context, videoSampleSource,
           MediaCodec.VIDEO_SCALING_MODE_SCALE_TO_FIT, 5000, drmSessionManager, true,
           mainHandler, player, 50);
@@ -230,7 +230,7 @@ public class DashRendererBuilder implements RendererBuilder {
           elapsedRealtimeOffset, mainHandler, player);
       ChunkSampleSource audioSampleSource = new ChunkSampleSource(audioChunkSource, loadControl,
           AUDIO_BUFFER_SEGMENTS * BUFFER_SEGMENT_SIZE, mainHandler, player,
-          DemoPlayer.TYPE_AUDIO);
+          Player.TYPE_AUDIO);
       TrackRenderer audioRenderer = new MediaCodecAudioTrackRenderer(audioSampleSource,
           drmSessionManager, true, mainHandler, player, AudioCapabilities.getCapabilities(context));
 
@@ -241,15 +241,15 @@ public class DashRendererBuilder implements RendererBuilder {
           elapsedRealtimeOffset, mainHandler, player);
       ChunkSampleSource textSampleSource = new ChunkSampleSource(textChunkSource, loadControl,
           TEXT_BUFFER_SEGMENTS * BUFFER_SEGMENT_SIZE, mainHandler, player,
-          DemoPlayer.TYPE_TEXT);
+          Player.TYPE_TEXT);
       TrackRenderer textRenderer = new TextTrackRenderer(textSampleSource, player,
           mainHandler.getLooper());
 
       // Invoke the callback.
-      TrackRenderer[] renderers = new TrackRenderer[DemoPlayer.RENDERER_COUNT];
-      renderers[DemoPlayer.TYPE_VIDEO] = videoRenderer;
-      renderers[DemoPlayer.TYPE_AUDIO] = audioRenderer;
-      renderers[DemoPlayer.TYPE_TEXT] = textRenderer;
+      TrackRenderer[] renderers = new TrackRenderer[Player.RENDERER_COUNT];
+      renderers[Player.TYPE_VIDEO] = videoRenderer;
+      renderers[Player.TYPE_AUDIO] = audioRenderer;
+      renderers[Player.TYPE_TEXT] = textRenderer;
       player.onRenderers(renderers, bandwidthMeter);
     }
 

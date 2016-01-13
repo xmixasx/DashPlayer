@@ -1,41 +1,58 @@
-package com.example.mixas.exoplayerwrapper;
+package com.example.mixas.simpleexoplayer;
 
 import android.content.Context;
 import android.net.Uri;
 import android.view.KeyEvent;
+import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.widget.MediaController;
+import android.widget.Toast;
 
-import com.example.mixas.exoplayerwrapper.Player.*;
-import com.google.android.exoplayer.util.DebugTextViewHelper;
+import com.example.mixas.exoplayerwrapper.Player.DashRendererBuilder;
+import com.example.mixas.exoplayerwrapper.Player.Player;
+import com.example.mixas.exoplayerwrapper.SimpleMediaDrmCallback;
 import com.google.android.exoplayer.util.Util;
 
 /**
- * Created by mixas on 12.01.16.
+ * Created by mixas on 13.01.16.
  */
-public class ExoPlayerWrapper implements SurfaceHolder.Callback{
+public class DASHPlayer {
 
-    private DemoPlayer player;
-    boolean playerNeedsPrepare;
+    private static final String EXT_DASH = ".mpd";
+
+    private Player player;
+    private boolean playerNeedsPrepare = true;
     private MediaController mediaController;
     private Uri contentUri;
     private Context mContext;
     private long playerPosition;
     private SurfaceView mView;
 
-    public ExoPlayerWrapper(Context context, SurfaceView view){
+    public DASHPlayer(Context context, SurfaceView view){
         mContext = context;
         mView = view;
         mediaController = new KeyCompatibleMediaController(mContext);
-        mediaController.setAnchorView(view.getRootView().getRootView());
+        mediaController.setAnchorView(mView);
+
 
     }
 
-    public void preparePlayer(boolean playWhenReady) {
+
+    private Player.RendererBuilder getRendererBuilder() {
+        String userAgent = Util.getUserAgent(mContext, "DashPlayer");
+        return new DashRendererBuilder(mContext, userAgent, contentUri.toString(),
+                new SimpleMediaDrmCallback(contentUri.toString()));
+
+    }
+
+
+
+
+    public void play(long currentPos) {
         if (player == null) {
-            player = new DemoPlayer(getRendererBuilder());
-            player.seekTo(playerPosition);
+            player = new Player(getRendererBuilder());
+            player.seekTo(currentPos);
             playerNeedsPrepare = true;
             mediaController.setMediaPlayer(player.getPlayerControl());
             mediaController.setEnabled(true);
@@ -46,62 +63,67 @@ public class ExoPlayerWrapper implements SurfaceHolder.Callback{
             playerNeedsPrepare = false;
         }
         player.setSurface(mView.getHolder().getSurface());
-        player.setPlayWhenReady(playWhenReady);
+        player.setPlayWhenReady(true);
     }
 
-    public void releasePlayer() {
+
+    public long stop() {
         if (player != null) {
             playerPosition = player.getCurrentPosition();
             player.release();
             player = null;
+            return playerPosition;
+        }
+
+        return 0;
+    }
+
+    public void pause() {
+        if (player != null && player.getPlayerControl().canPause()) {
+            player.getPlayerControl().pause();
+        }
+
+    }
+
+    public void setSurface(Surface v) {
+        player.setSurface(v);
+
+    }
+
+    public void setContent(Uri url) {
+        String lastPathSegment = url.getLastPathSegment();
+        if (lastPathSegment.endsWith(EXT_DASH)) {
+            contentUri = url;
+        }
+        else  {
+            Toast.makeText(mContext, "Url isn't a path to DASH", Toast.LENGTH_SHORT).show();
         }
     }
 
-    public void setListener(DemoPlayer.Listener listener){
+    public boolean isAdaptive() {
+        return false;
+    }
+
+    public void setAdaptive() {
+
+    }
+
+    public void toggleMediaController() {
+        if (mediaController.isShowing()) {
+            mediaController.hide();
+
+        } else {
+            mediaController.show(0);
+        }
+
+    }
+
+    public void blockingClearSurface() {
+        player.blockingClearSurface();
+    }
+
+    public void addListener(Player.Listener listener) {
         player.addListener(listener);
-    }
-
-    public void setCaptionListener(DemoPlayer.CaptionListener listener){
-        player.setCaptionListener(listener);
-    }
-
-    public MediaController getMediaController() {
-        return mediaController;
-    }
-
-    public void setMetadataListener(DemoPlayer.Id3MetadataListener listener){
-        player.setMetadataListener(listener);
-    }
-
-    private DemoPlayer.RendererBuilder getRendererBuilder() {
-        String userAgent = Util.getUserAgent(mContext, "ExoPlayerDemo");
-        return new DashRendererBuilder(mContext, userAgent, contentUri.toString(),
-                new SimpleMediaDrmCallback(contentUri.toString()));
-
-    }
-
-
-    public void setContentUri(Uri contentUri) {
-        this.contentUri = contentUri;
-    }
-
-    @Override
-    public void surfaceCreated(SurfaceHolder holder) {
-        if (player != null) {
-            player.setSurface(holder.getSurface());
-        }
-    }
-
-    @Override
-    public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
-        // Do nothing.
-    }
-
-    @Override
-    public void surfaceDestroyed(SurfaceHolder holder) {
-        if (player != null) {
-            player.blockingClearSurface();
-        }
     }
 
     private static final class KeyCompatibleMediaController extends MediaController {
@@ -137,4 +159,5 @@ public class ExoPlayerWrapper implements SurfaceHolder.Callback{
             return super.dispatchKeyEvent(event);
         }
     }
+
 }
